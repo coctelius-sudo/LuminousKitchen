@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Coctelius Inventory Management</title>
+<meta name="theme-color" content="#0b0f14">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="styles.css">
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('./sw.js');
+  });
+}
+</script>
+</head>
+<body>
+<header class="top">
+  <h1>Coctelius Inv.Management By Joao Ferreira</h1>
+  <button id="installBtn" hidden class="btn primary">Instalar</button>
+</header>
+
+<main class="main">
+  <!-- INVENTARIO -->
+  <section id="view-inventario" class="view active">
+    <div class="toolbar">
+      <input id="buscarProducto" placeholder="Buscar productos…">
+      <button id="agregarProductoBtn" class="btn primary">+ Agregar</button>
+    </div>
+    <div class="stats">
+      <div class="stat"><span id="stat-total">0</span><small>Total Items</small></div>
+      <div class="stat warn"><span id="stat-sinstock">0</span><small>Sin Stock</small></div>
+      <div class="stat warn"><span id="stat-bajo">0</span><small>Stock Bajo</small></div>
+    </div>
+    <div class="chips" id="filtrosCategorias"></div>
+    <ul id="listaProductos" class="cards"></ul>
+    <p id="vacioProductos" class="muted">No hay productos. Agrega tu primer producto al inventario.</p>
+  </section>
+
+  <!-- CATEGORIAS -->
+  <section id="view-categorias" class="view">
+    <div class="toolbar">
+      <input id="nuevaCategoriaNombre" placeholder="Nueva categoría…">
+      <button id="addCategoriaBtn" class="btn primary">Agregar</button>
+    </div>
+    <ul id="listaCategorias" class="cards"></ul>
+    <p id="vacioCategorias" class="muted">Aún no hay categorías.</p>
+  </section>
+
+  <!-- REPORTES -->
+  <section id="view-reportes" class="view">
+    <div class="report-card">
+      <h3>Reporte de Inventario</h3>
+      <p>Listado completo de productos y stock actual</p>
+      <button id="genInventario" class="btn primary">Generar</button>
+    </div>
+    <div class="report-card">
+      <h3>Reporte de Compras</h3>
+      <p>Productos que necesitan reabastecimiento</p>
+      <button id="genCompras" class="btn success">Generar</button>
+    </div>
+    <div class="report-card">
+      <h3>Reporte de Compras Simple</h3>
+      <p>Listado simple: ítem + cantidad a comprar</p>
+      <button id="genComprasSimple" class="btn success">Generar</button>
+    </div>
+    <div class="report-card">
+      <h3>Alertas de Stock</h3>
+      <p>Productos con stock bajo o agotado</p>
+      <button id="genAlertas" class="btn warn">Generar</button>
+    </div>
+
+    <div id="reporteSalida" class="report-out hidden">
+      <div class="report-actions">
+        <button id="copyReporte" class="btn secondary">Copiar</button>
+        <button id="shareReporte" class="btn secondary">Compartir</button>
+        <a id="waReporte" class="btn secondary" target="_blank" rel="noopener">WhatsApp</a>
+      </div>
+      <textarea id="reporteTexto" readonly></textarea>
+    </div>
+  </section>
+
+  <!-- CONFIG -->
+  <section id="view-config" class="view">
+    <h3>Respaldo de datos</h3>
+    <div class="toolbar">
+      <button id="exportarBtn" class="btn secondary">Exportar .json</button>
+      <label class="btn secondary">
+        Importar .json
+        <input id="importarInput" type="file" accept="application/json" hidden>
+      </label>
+      <button id="resetBtn" class="btn danger">Borrar todo</button>
+    </div>
+    <p class="muted">Tus datos se guardan solo en este dispositivo (localStorage).</p>
+  </section>
+</main>
+
+<nav class="bottom">
+  <button class="tab active" data-target="inventario">Inventario</button>
+  <button class="tab" data-target="categorias">Categorías</button>
+  <button class="tab" data-target="reportes">Reportes</button>
+  <button class="tab" data-target="config">Configuración</button>
+</nav>
+
+<!-- Dialogo Producto -->
+<dialog id="dlgProducto">
+  <form method="dialog" id="formProducto" class="form">
+    <h3 id="dlgTitulo">Agregar Item</h3>
+    <label>Nombre *<input id="pNombre" required placeholder="Nombre del producto"></label>
+    <label>Categoría *
+      <select id="pCategoria" required></select>
+    </label>
+    <div class="grid2">
+      <label>Stock Actual<input id="pStock" type="number" step="any" min="0" value="0"></label>
+      <label>Unidad *<input id="pUnidad" required placeholder="kg, pzas, lt"></label>
+    </div>
+    <label>Stock Mínimo<input id="pMin" type="number" step="any" min="0" value="1"></label>
+    <label>Descripción<textarea id="pDesc" placeholder="Opcional"></textarea></label>
+    <menu>
+      <button value="cancel" class="btn secondary">Cancelar</button>
+      <button value="ok" class="btn primary">Guardar</button>
+    </menu>
+  </form>
+</dialog>
+
+<template id="tplProducto">
+  <li class="card">
+    <div class="card-head">
+      <h4 class="card-title"></h4>
+      <small class="badge"></small>
+    </div>
+    <p class="card-sub"></p>
+    <p class="card-desc"></p>
+    <div class="card-actions">
+      <button class="btn secondary editar">Editar</button>
+      <button class="btn danger borrar">Borrar</button>
+    </div>
+  </li>
+</template>
+
+<template id="tplCategoria">
+  <li class="card">
+    <div class="card-head">
+      <h4 class="card-title"></h4>
+      <small class="muted sub"></small>
+    </div>
+    <div class="card-actions">
+      <button class="btn secondary renombrar">Editar</button>
+      <button class="btn danger borrar">Borrar</button>
+    </div>
+  </li>
+</template>
+
+<script src="app.js"></script>
+</body>
+</html>
